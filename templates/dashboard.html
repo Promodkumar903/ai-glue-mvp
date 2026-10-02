@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Glue v4.1 - Mission Control</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0b0e14; color: #e6edf3; display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: #0d1117; border-right: 1px solid #21262d; padding: 24px 16px; height: 100vh; position: sticky; top: 0; overflow-y: auto; }
+        .logo { font-size: 22px; font-weight: 700; color: #58a6ff; margin-bottom: 32px; }
+        .logo span { color: #f0883e; }
+        .nav-item { display: flex; align-items: center; padding: 10px 14px; border-radius: 8px; color: #8b949e; text-decoration: none; margin-bottom: 4px; cursor: pointer; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: #1c2333; color: #f0f6fc; }
+        .nav-item .icon { margin-right: 12px; font-size: 18px; width: 24px; text-align: center; }
+        .logout { margin-top: 40px; border-top: 1px solid #21262d; padding-top: 20px; color: #f85149; }
+        .main { flex: 1; padding: 30px 40px; overflow-y: auto; max-height: 100vh; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { font-size: 26px; font-weight: 600; }
+        .user-badge { background: #1c2333; padding: 8px 18px; border-radius: 20px; font-size: 14px; border: 1px solid #30363d; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
+        .stat-card .label { font-size: 13px; color: #8b949e; text-transform: uppercase; }
+        .stat-card .value { font-size: 32px; font-weight: 700; margin-top: 6px; }
+        .stat-card.danger .value { color: #f85149; }
+        .stat-card.success .value { color: #3fb950; }
+        .stat-card.warning .value { color: #d29922; }
+        .panel { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
+        .panel h2 { font-size: 18px; margin-bottom: 16px; color: #f0f6fc; }
+        .panel h2 .badge { background: #21262d; font-size: 12px; padding: 2px 10px; border-radius: 12px; margin-left: 10px; font-weight: 400; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 10px 8px; border-bottom: 1px solid #21262d; color: #8b949e; }
+        td { padding: 10px 8px; border-bottom: 1px solid #1c2333; }
+        .risk-high { color: #f85149; font-weight: 600; }
+        .risk-medium { color: #d29922; font-weight: 600; }
+        .risk-low { color: #3fb950; font-weight: 600; }
+        .status-badge { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .status-done { background: #1b3a24; color: #3fb950; }
+        .status-pending { background: #2d2a1b; color: #d29922; }
+        .btn { background: #238636; border: none; color: white; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .btn:hover { background: #2ea043; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .input-area { display: flex; gap: 12px; margin: 16px 0; }
+        .input-area textarea { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; color: white; resize: vertical; font-family: monospace; }
+        .input-area button { padding: 12px 30px; }
+        .code-block { background: #0d1117; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; border: 1px solid #21262d; }
+        .flex { display: flex; justify-content: space-between; align-items: center; }
+        .hidden { display: none; }
+        @media (max-width: 768px) { .sidebar { display: none; } .main { padding: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">AI <span>GLUE</span></div>
+        <div class="nav-item active" onclick="switchTab('dashboard')"><span class="icon">📊</span> Dashboard</div>
+        <div class="nav-item" onclick="switchTab('requests')"><span class="icon">📝</span> Requests</div>
+        <div class="nav-item" onclick="switchTab('audit')"><span class="icon">🔍</span> Audit Trail</div>
+        <div class="nav-item" onclick="switchTab('health')"><span class="icon">🖥️</span> System Health</div>
+        <div class="nav-item logout" onclick="logout()"><span class="icon">🚪</span> Logout</div>
+    </div>
+    <div class="main">
+        <div class="header">
+            <h1 id="page-title">🛸 Mission Control</h1>
+            <div class="user-badge">👤 <span id="username">Admin</span></div>
+        </div>
+        <div id="tab-dashboard">
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card"><div class="label">Total Users</div><div class="value" id="stat-users">0</div></div>
+                <div class="stat-card"><div class="label">Total Requests</div><div class="value" id="stat-requests">0</div></div>
+                <div class="stat-card danger"><div class="label">High Risk Alerts</div><div class="value" id="stat-high">0</div></div>
+                <div class="stat-card success"><div class="label">Success Rate</div><div class="value" id="stat-rate">0%</div></div>
+            </div>
+            <div class="panel">
+                <h2>📌 Recent Activity <span class="badge">Live</span></h2>
+                <div id="recent-activity">Loading...</div>
+            </div>
+            <div class="panel">
+                <h2>📥 Quick Submit</h2>
+                <div class="input-area">
+                    <textarea id="quick-prompt" rows="2">print("Hello Mission Control!")</textarea>
+                    <button class="btn" onclick="quickSubmit()">▶ Submit</button>
+                </div>
+                <div id="quick-result" class="hidden code-block"></div>
+            </div>
+        </div>
+        <div id="tab-requests" class="hidden">
+            <div class="panel">
+                <div class="flex"><h2>📋 All Requests</h2> <button class="btn btn-sm" onclick="loadRequests()">🔄 Refresh</button></div>
+                <div id="requests-table"><p>Loading...</p></div>
+            </div>
+        </div>
+        <div id="tab-audit" class="hidden">
+            <div class="panel">
+                <h2>🔍 Audit Trail <span class="badge">Immutable</span></h2>
+                <div id="audit-table"><p>Loading...</p></div>
+            </div>
+        </div>
+        <div id="tab-health" class="hidden">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="label">System Status</div><div class="value" style="color:#3fb950;">● LIVE</div></div>
+                <div class="stat-card"><div class="label">Uptime</div><div class="value" id="uptime">0s</div></div>
+                <div class="stat-card"><div class="label">CPU Usage</div><div class="value" id="cpu">0%</div></div>
+                <div class="stat-card"><div class="label">Memory</div><div class="value" id="memory">0 MB</div></div>
+            </div>
+            <div class="panel">
+                <h2>📜 Live Logs</h2>
+                <div id="live-logs" class="code-block" style="height:300px; overflow-y:auto; font-size:12px;">Waiting...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let token = localStorage.getItem('token');
+        let currentTab = 'dashboard';
+        if (!token) { window.location.href = '/login-page'; }
+        async function api(method, path, body) {
+            const res = await fetch('http://localhost:5000' + path, {
+                method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            if (res.status === 401) { logout(); return; }
+            return res.json();
+        }
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.nav-item[onclick="switchTab('${tab}')"]`)?.classList.add('active');
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            currentTab = tab;
+            if (tab === 'dashboard') loadDashboard();
+            if (tab === 'requests') loadRequests();
+            if (tab === 'audit') loadAudit();
+            if (tab === 'health') loadHealth();
+        }
+        function logout() { localStorage.removeItem('token'); window.location.reload(); }
+        async function loadDashboard() {
+            try {
+                const stats = await api('GET', '/api/stats');
+                document.getElementById('stat-users').innerText = stats.users || 0;
+                document.getElementById('stat-requests').innerText = stats.total_requests || 0;
+                document.getElementById('stat-high').innerText = stats.high_risk || 0;
+                document.getElementById('stat-rate').innerText = stats.success_rate || '0%';
+                document.getElementById('username').innerText = stats.username || 'Admin';
+                const recent = await api('GET', '/api/recent');
+                let html = '';
+                recent.slice(0, 5).forEach(r => {
+                    html += `<div style="padding:8px 0; border-bottom:1px solid #1c2333;">${r.status === 'DONE' ? '✅' : '⏳'} <b>#${r.id}</b> ${r.prompt.substring(0,60)}... <span class="risk-${r.risk_level.toLowerCase()}">[${r.risk_level}]</span> <span class="status-badge status-${r.status.toLowerCase()}">${r.status}</span></div>`;
+                });
+                document.getElementById('recent-activity').innerHTML = html || 'No recent activity.';
+            } catch(e) { console.error(e); }
+        }
+        async function quickSubmit() {
+            const prompt = document.getElementById('quick-prompt').value;
+            if (!prompt) return alert('Enter a prompt!');
+            const data = await api('POST', '/submit', { prompt });
+            if (data.id) {
+                document.getElementById('quick-result').classList.remove('hidden');
+                document.getElementById('quick-result').innerText = `✅ Submitted! Request #${data.id} | Status: ${data.status}`;
+                setTimeout(() => { document.getElementById('quick-result').classList.add('hidden'); }, 3000);
+                loadDashboard();
+            }
+        }
+        async function loadRequests() {
+            const data = await api('GET', '/requests');
+            let html = `<table><tr><th>ID</th><th>Prompt</th><th>Risk</th><th>Status</th><th>Result</th><th>Action</th></tr>`;
+            data.forEach(r => {
+                html += `<tr><td>#${r.id}</td><td>${r.prompt.substring(0, 50)}...</td><td class="risk-${r.risk_level.toLowerCase()}">${r.risk_level}</td><td><span class="status-badge status-${r.status.toLowerCase()}">${r.status}</span></td><td>${r.result ? r.result.substring(0, 30) : '-'}</td><td>${r.status === 'APPROVED' || r.status === 'PENDING' ? `<button class="btn btn-sm" onclick="execReq(${r.id})">▶ Execute</button>` : '-'}</td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('requests-table').innerHTML = data.length ? html : '<p>No requests found.</p>';
+        }
+        async function execReq(id) {
+            const data = await api('POST', '/execute/' + id);
+            if (data.result) alert('✅ Execution Complete!
+
+' + data.result);
+            loadRequests(); loadDashboard();
+        }
+        async function loadAudit() {
+            const data = await api('GET', '/api/audit');
+            let html = `<table><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr>`;
+            data.forEach(a => {
+                html += `<tr><td>${new Date(a.timestamp).toLocaleString()}</td><td>User #${a.user_id}</td><td>${a.action}</td><td>${JSON.stringify(a.details).substring(0, 50)}</td></tr>`;
+            });
+            html += '</table>';
+            document.getElementById('audit-table').innerHTML = data.length ? html : '<p>No audit logs found.</p>';
+        }
+        async function loadHealth() {
+            const health = await api('GET', '/api/health');
+            document.getElementById('uptime').innerText = health.uptime || '0s';
+            document.getElementById('cpu').innerText = health.cpu || '0%';
+            document.getElementById('memory').innerText = health.memory || '0 MB';
+            document.getElementById('live-logs').innerText = health.logs || 'System healthy.';
+        }
+        window.onload = function() { loadDashboard(); };
+        setInterval(() => { if (currentTab === 'dashboard') loadDashboard(); }, 10000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>Login</title>
+<style>
+body{background:#0d1117;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;}
+.box{background:#161b22;padding:40px;border-radius:12px;border:1px solid #30363d;width:320px;}
+input{width:100%;padding:10px;margin:8px 0;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:white;}
+button{width:100%;padding:10px;background:#238636;border:none;border-radius:6px;color:white;font-weight:bold;cursor:pointer;}
+.error{color:#f85149;margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="box">
+    <h2>🚀 AI Glue Login</h2>
+    <input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password">
+    <button onclick="login()">Enter Mission Control</button>
+    <p style="margin-top:10px;font-size:13px;color:#8b949e;">New? <a href="#" onclick="signup()" style="color:#58a6ff;">Create Account</a></p>
+    <div id="msg" class="error"></div>
+</div>
+<script>
+async function api(method, path, body) {
+    const res = await fetch('http://localhost:5000'+path, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return res.json();
+}
+async function login() {
+    const data = await api('POST','/login', {username:document.getElementById('lu').value, password:document.getElementById('lp').value});
+    if(data.access_token) { localStorage.setItem('token', data.access_token); window.location.href='/'; }
+    else document.getElementById('msg').innerText = 'Invalid credentials';
+}
+async function signup() {
+    const u=document.getElementById('lu').value, p=document.getElementById('lp').value;
+    if(!u||!p) return alert('Fill fields');
+    await api('POST','/signup',{username:u,password:p});
+    alert('User created! Login now.');
+}
+</script>
+</body>
+</html>
